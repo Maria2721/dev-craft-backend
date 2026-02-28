@@ -8,7 +8,7 @@ RUN npm ci
 COPY prisma ./prisma/
 RUN npx prisma generate
 
-COPY tsconfig.json ./
+COPY nest-cli.json tsconfig.json tsconfig.build.json ./
 COPY src ./src
 RUN npm run build
 
@@ -26,4 +26,4 @@ RUN chown -R nodejs:nodejs /app
 USER nodejs
 
 EXPOSE 6969
-CMD ["node", "dist/index.js"]
+CMD ["node", "dist/main.js"]
