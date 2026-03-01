@@ -1,0 +1,28 @@
+name: Deploy to server
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          APP_PATH: ${{ secrets.APP_PATH }}
+        run: |
+          if [ -z "$SSH_PRIVATE_KEY" ] || [ -z "$SERVER_HOST" ] || [ -z "$SERVER_USER" ]; then
+            echo "Missing SSH_PRIVATE_KEY, SERVER_HOST or SERVER_USER secrets"
+            exit 1
+          fi
+          APP_PATH="${APP_PATH:-/var/www/html/dev-craft-backend}"
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh -o StrictHostKeyChecking=accept-new -i ~/.ssh/deploy_key \
+            "$SERVER_USER@$SERVER_HOST" \
+            "cd $APP_PATH && git pull && bash scripts/deploy-on-server.sh"
