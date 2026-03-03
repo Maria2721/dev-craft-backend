@@ -21,7 +21,19 @@ jobs:
           fi
           APP_PATH="${APP_PATH:-/var/www/html/dev-craft-backend}"
           mkdir -p ~/.ssh
-          echo "$SSH_PRIVATE_KEY" | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' > ~/.ssh/deploy_key
+          KEY=$(echo "$SSH_PRIVATE_KEY" | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+          if echo "$KEY" | grep -q '-----BEGIN'; then
+            BEGIN_LINE=$(echo "$KEY" | sed -n '/-----BEGIN.*KEY-----/p' | head -1)
+            END_LINE=$(echo "$KEY" | sed -n '/-----END.*KEY-----/p' | head -1)
+            MIDDLE=$(echo "$KEY" | sed -n "/-----BEGIN.*KEY-----/,/-----END.*KEY-----/p" | sed '1d;$d' | tr -d '\n')
+            {
+              echo "$BEGIN_LINE"
+              echo "$MIDDLE" | fold -w 64
+              echo "$END_LINE"
+            } > ~/.ssh/deploy_key
+          else
+            echo "$KEY" > ~/.ssh/deploy_key
+          fi
           chmod 600 ~/.ssh/deploy_key
           ssh -o StrictHostKeyChecking=accept-new -i ~/.ssh/deploy_key \
             "$SERVER_USER@$SERVER_HOST" \
