@@ -21,7 +21,7 @@ jobs:
           fi
           APP_PATH="${APP_PATH:-/var/www/html/dev-craft-backend}"
           mkdir -p ~/.ssh
-          echo "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          echo "$SSH_PRIVATE_KEY" | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           ssh -o StrictHostKeyChecking=accept-new -i ~/.ssh/deploy_key \
             "$SERVER_USER@$SERVER_HOST" \
