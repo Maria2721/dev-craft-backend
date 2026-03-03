@@ -35,6 +35,10 @@ jobs:
             echo "$KEY" > ~/.ssh/deploy_key
           fi
           chmod 600 ~/.ssh/deploy_key
+          if ! ssh-keygen -y -f ~/.ssh/deploy_key >/dev/null 2>&1; then
+            echo "::error::Invalid SSH key in secret. Use a private key without passphrase and paste it with newlines preserved."
+            exit 1
+          fi
           ssh -o StrictHostKeyChecking=accept-new -i ~/.ssh/deploy_key \
             "$SERVER_USER@$SERVER_HOST" \
             "cd $APP_PATH && git pull && bash scripts/deploy-on-server.sh"
