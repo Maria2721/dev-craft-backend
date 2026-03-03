@@ -32,7 +32,16 @@ jobs:
               echo "$END_LINE"
             } > ~/.ssh/deploy_key
           else
-            echo "$KEY" > ~/.ssh/deploy_key
+            B64=$(echo "$KEY" | tr -d '\n\r ')
+            if echo "$B64" | grep -qE '^[A-Za-z0-9+/=]+$'; then
+              {
+                echo "-----BEGIN OPENSSH PRIVATE KEY-----"
+                echo "$B64" | fold -w 70
+                echo "-----END OPENSSH PRIVATE KEY-----"
+              } > ~/.ssh/deploy_key
+            else
+              echo "$KEY" > ~/.ssh/deploy_key
+            fi
           fi
           chmod 600 ~/.ssh/deploy_key
           if ! ssh-keygen -y -f ~/.ssh/deploy_key >/dev/null 2>&1; then
