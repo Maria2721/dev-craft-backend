@@ -22,7 +22,7 @@ jobs:
           APP_PATH="${APP_PATH:-/var/www/html/dev-craft-backend}"
           mkdir -p ~/.ssh
           KEY=$(echo "$SSH_PRIVATE_KEY" | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-          if echo "$KEY" | grep -q '-----BEGIN'; then
+          if echo "$KEY" | grep -q -- '-----BEGIN'; then
             BEGIN_LINE=$(echo "$KEY" | sed -n '/-----BEGIN.*KEY-----/p' | head -1)
             END_LINE=$(echo "$KEY" | sed -n '/-----END.*KEY-----/p' | head -1)
             MIDDLE=$(echo "$KEY" | sed -n "/-----BEGIN.*KEY-----/,/-----END.*KEY-----/p" | sed '1d;$d' | tr -d '\n')
