@@ -15,6 +15,15 @@ services:
       JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-900}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
       JWT_REFRESH_TTL: ${JWT_REFRESH_TTL:-604800}
+      AI_LLM_PROVIDER: ${AI_LLM_PROVIDER:-api_llm}
+      AI_MAX_MESSAGE_LENGTH: ${AI_MAX_MESSAGE_LENGTH:-4000}
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_API_BASE_URL: ${AI_API_BASE_URL:-}
+      AI_API_MODEL: ${AI_API_MODEL:-}
+      AI_LOCAL_BASE_URL: ${AI_LOCAL_BASE_URL:-}
+      AI_LOCAL_MODEL: ${AI_LOCAL_MODEL:-}
+      AI_PLATFORM_API_KEY: ${AI_PLATFORM_API_KEY:-}
+      AI_PLATFORM_BASE_URL: ${AI_PLATFORM_BASE_URL:-}
     ports:
       - "${PORT}:${PORT}"
     command: ["sh", "-c", "sleep 5 && exec node dist/main.js"]
