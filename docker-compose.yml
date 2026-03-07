@@ -3,6 +3,7 @@ services:
     build:
       context: .
       dockerfile: docker/node/Dockerfile
+    restart: on-failure
     depends_on:
       postgres:
         condition: service_healthy
@@ -10,8 +11,13 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       PORT: ${PORT}
       CORS_ORIGIN: ${CORS_ORIGIN}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-900}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      JWT_REFRESH_TTL: ${JWT_REFRESH_TTL:-604800}
     ports:
       - "${PORT}:${PORT}"
+    command: ["sh", "-c", "sleep 5 && exec node dist/main.js"]
 
   postgres:
     image: postgres:18-alpine
