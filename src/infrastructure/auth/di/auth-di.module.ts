@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 
+import { LoginUseCase } from '../../../application/auth/login.use-case';
 import { RegisterUseCase } from '../../../application/auth/register.use-case';
 import { TokenService } from '../../../domain/token.service';
 import { UserRepository } from '../../../domain/user.repository';
@@ -22,7 +23,8 @@ import { JwtTokenService } from '../jwt-token.service';
     { provide: UserRepository, useClass: PrismaUserRepository },
     { provide: TokenService, useClass: JwtTokenService },
     RegisterUseCase,
+    LoginUseCase,
   ],
-  exports: [RegisterUseCase],
+  exports: [RegisterUseCase, LoginUseCase],
 })
 export class AuthDiModule {}
