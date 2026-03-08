@@ -1,8 +1,8 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 
-import { TokenService } from '../../domain/token.service';
-import { UserRepository } from '../../domain/user.repository';
+import { UserRepository } from '../../domain/repositories/user.repository';
+import { TokenService } from '../../domain/services/token.service';
 import { AuthResponse } from './register.use-case';
 
 export type LoginDto = {
