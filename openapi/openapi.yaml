@@ -1,0 +1,322 @@
+openapi: 3.0.3
+info:
+  title: DevCraft API
+  description: Backend API for DevCraft — interview preparation platform (JavaScript & TypeScript).
+  version: 0.1.0
+
+servers:
+  - url: http://155.212.208.175:6969
+    description: Production server
+  - url: http://localhost:6969
+    description: Local development
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        name:
+          type: string
+          example: Ivan
+        surname:
+          type: string
+          example: Petrov
+        createdAt:
+          type: string
+          format: date-time
+          example: "2026-03-08T12:00:00.000Z"
+
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        accessToken:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIs...
+        refreshToken:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIs...
+        expiresIn:
+          type: integer
+          description: Access token TTL in seconds
+          example: 900
+
+    RegisterRequest:
+      type: object
+      required:
+        - email
+        - password
+        - name
+        - surname
+      properties:
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        password:
+          type: string
+          minLength: 6
+          example: MyPass123
+        name:
+          type: string
+          example: Ivan
+        surname:
+          type: string
+          example: Petrov
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        password:
+          type: string
+          example: MyPass123
+
+    PostChatRequest:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          maxLength: 4000
+          example: "Привет, расскажи про тип данных Symbol"
+        conversationId:
+          type: string
+          format: uuid
+          description: Pass existing ID to continue a conversation
+          example: 0c100aa0-2a1a-4372-86c5-9bdd42b07f2c
+        context:
+          type: object
+          properties:
+            taskId:
+              type: string
+            taskType:
+              type: string
+            taskTitle:
+              type: string
+            taskDescription:
+              type: string
+            codeSnippet:
+              type: string
+
+    PostChatResponse:
+      type: object
+      properties:
+        conversationId:
+          type: string
+          format: uuid
+          example: 0c100aa0-2a1a-4372-86c5-9bdd42b07f2c
+        messageId:
+          type: string
+          format: uuid
+          example: a7fc48bd-2a75-41b2-94d9-12603fea646c
+        reply:
+          type: string
+          example: "Symbol — это примитивный тип данных в JavaScript..."
+
+    HealthResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          example: true
+
+    ValidationError:
+      type: object
+      properties:
+        message:
+          type: array
+          items:
+            type: string
+          example: ["email must be an email", "password must be longer than or equal to 6 characters"]
+        error:
+          type: string
+          example: Bad Request
+        statusCode:
+          type: integer
+          example: 400
+
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+        error:
+          type: string
+        statusCode:
+          type: integer
+
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      responses:
+        "200":
+          description: Service is running
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+
+  /auth/register:
+    post:
+      tags:
+        - Auth
+      summary: Register a new user
+      description: Creates a new user and returns JWT tokens. Rate limit — 25 requests per hour per IP.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
+        "409":
+          description: User with this email already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                message: User with this email already exists
+                error: Conflict
+                statusCode: 409
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                message: ThrottlerException — Too Many Requests
+                statusCode: 429
+
+  /auth/login:
+    post:
+      tags:
+        - Auth
+      summary: Log in
+      description: Authenticates user by email and password, returns JWT tokens.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                message: Invalid credentials
+                error: Unauthorized
+                statusCode: 401
+
+  /ai/chat:
+    post:
+      tags:
+        - AI Chat
+      summary: Send a message to AI assistant
+      description: |
+        Sends a user message to the AI assistant and returns a reply.
+        Pass conversationId to continue an existing conversation.
+        Rate limit — 50 requests per hour per IP. Requires Bearer token.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostChatRequest"
+      responses:
+        "200":
+          description: AI reply
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostChatResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
+        "401":
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                message: Unauthorized
+                statusCode: 401
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                message: ThrottlerException — Too Many Requests
+                statusCode: 429
+        "503":
+          description: AI service temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                message: AI service temporarily unavailable
+                error: Service Unavailable
+                statusCode: 503
