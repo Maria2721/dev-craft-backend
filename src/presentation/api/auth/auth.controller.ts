@@ -1,4 +1,5 @@
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 
 import { LoginUseCase } from '../../../application/auth/login.use-case';
 import { RegisterUseCase } from '../../../application/auth/register.use-case';
@@ -14,6 +15,7 @@ export class AuthController {
 
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
+  @Throttle({ default: { ttl: 3_600_000, limit: 25 } })
   async register(@Body() dto: RegisterDto) {
     return this.registerUseCase.execute(dto);
   }
