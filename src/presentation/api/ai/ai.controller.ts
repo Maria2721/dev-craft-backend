@@ -1,4 +1,5 @@
 import { Body, Controller, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 
 import { SendChatMessageUseCase } from '../../../application/ai/send-chat-message.use-case';
 import { User } from '../../decorators/user.decorator';
@@ -7,6 +8,7 @@ import { PostChatDto } from './dto/post-chat.dto';
 
 @Controller('ai/chat')
 @UseGuards(JwtAuthGuard)
+@Throttle({ default: { ttl: 3_600_000, limit: 50 } })
 export class AiController {
   constructor(private readonly sendChatMessageUseCase: SendChatMessageUseCase) {}
 
