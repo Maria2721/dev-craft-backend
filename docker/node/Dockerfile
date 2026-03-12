@@ -25,6 +25,7 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/jest.config.js ./jest.config.js
+COPY --from=builder /app/tsconfig.json ./tsconfig.json
 COPY --from=builder /app/tsconfig.jest.json ./tsconfig.jest.json
 COPY --from=builder /app/tests ./tests
 COPY --from=builder /app/src ./src
