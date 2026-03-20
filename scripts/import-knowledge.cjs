@@ -62,7 +62,11 @@ function parseQuestions(sectionContent) {
 
     const promptPart = chunk.split(/\nCorrect answer:/i)[0].trim();
     const codeMatch = promptPart.match(/```[\w]*\n([\s\S]*?)```/);
-    const prompt = promptPart.replace(/```[\w]*\n[\s\S]*?```/g, '').trim();
+    const promptWithoutCode = promptPart.replace(/```[\w]*\n[\s\S]*?```/g, '').trim();
+    const prompt = promptWithoutCode
+      .replace(/^[A-Z]\.\s+.+$/gm, '')
+      .replace(/\n{2,}/g, '\n')
+      .trim();
     const correctLabels = correctMatch[1]
       .split(',')
       .map((s) => s.trim())
@@ -116,7 +120,7 @@ function parseCodeTasks(sectionContent) {
 
 async function main() {
   const filePath = resolve(process.cwd(), 'seed', 'knowledge', 'knowledge_list_new.md');
-  const markdown = readFileSync(filePath, 'utf8');
+  const markdown = readFileSync(filePath, 'utf8').replace(/\r\n/g, '\n');
   const sections = extractSections(markdown);
 
   await prisma.questionOption.deleteMany();
