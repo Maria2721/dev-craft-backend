@@ -5,6 +5,7 @@ import { PrismaModule } from './infrastructure/persistence/prisma/prisma.module'
 import { AiModule } from './presentation/api/ai/ai.module';
 import { AuthModule } from './presentation/api/auth/auth.module';
 import { HealthController } from './presentation/api/health/health.controller';
+import { KnowledgeModule } from './presentation/api/knowledge/knowledge.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { HealthController } from './presentation/api/health/health.controller';
     PrismaModule,
     AuthModule,
     AiModule,
+    KnowledgeModule,
   ],
   controllers: [HealthController],
 })
