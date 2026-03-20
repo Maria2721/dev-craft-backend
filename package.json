@@ -8,6 +8,7 @@
     "start:dev": "nest start --watch",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
+    "knowledge:import": "node scripts/import-knowledge.cjs",
     "lint": "eslint .",
     "test": "jest",
     "test:watch": "jest --watch",
