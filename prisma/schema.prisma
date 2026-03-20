@@ -45,3 +45,73 @@ model Message {
   @@index([conversationId])
   @@map("messages")
 }
+
+enum QuestionType {
+  SINGLE_CHOICE
+  MULTIPLE_CHOICE
+}
+
+enum CodeTaskType {
+  AI_CHECK
+  DRAG_DROP
+}
+
+model Topic {
+  id          String     @id @default(uuid())
+  slug        String     @unique
+  title       String
+  description String?
+  order       Int
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  questions   Question[]
+  codeTasks   CodeTask[]
+
+  @@index([order])
+  @@map("topics")
+}
+
+model Question {
+  id          String         @id @default(uuid())
+  topicId     String
+  topic       Topic          @relation(fields: [topicId], references: [id])
+  prompt      String         @db.Text
+  codeSnippet String?        @db.Text
+  type        QuestionType
+  order       Int
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  options     QuestionOption[]
+
+  @@index([topicId, order])
+  @@map("questions")
+}
+
+model QuestionOption {
+  id         String   @id @default(uuid())
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id])
+  label      String
+  text       String
+  isCorrect  Boolean
+  order      Int
+
+  @@index([questionId, order])
+  @@map("question_options")
+}
+
+model CodeTask {
+  id                String       @id @default(uuid())
+  topicId           String
+  topic             Topic        @relation(fields: [topicId], references: [id])
+  title             String
+  description       String       @db.Text
+  taskType          CodeTaskType
+  referenceSolution String?      @db.Text
+  order             Int
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  @@index([topicId, order])
+  @@map("code_tasks")
+}
