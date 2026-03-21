@@ -51,8 +51,14 @@ export interface TopicQuestions {
   questions: TopicQuestionDetails[];
 }
 
+export interface TopicCodeTasks {
+  topic: TopicBase;
+  codeTasks: TopicCodeTaskPreview[];
+}
+
 export abstract class TopicRepository {
   abstract listForKnowledgeMap(): Promise<TopicListItem[]>;
   abstract getTopicPreview(topicId: string): Promise<TopicPreview | null>;
   abstract getTopicQuestions(topicId: string): Promise<TopicQuestions | null>;
+  abstract getTopicCodeTasks(topicId: string): Promise<TopicCodeTasks | null>;
 }
