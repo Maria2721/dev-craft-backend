@@ -84,4 +84,65 @@ export class PrismaTopicRepository extends TopicRepository {
       })),
     };
   }
+
+  async getTopicQuestions(topicId: string) {
+    const topic = await this.prisma.topic.findUnique({
+      where: { id: topicId },
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        description: true,
+        order: true,
+        questions: {
+          select: {
+            id: true,
+            prompt: true,
+            codeSnippet: true,
+            order: true,
+            options: {
+              select: {
+                id: true,
+                label: true,
+                text: true,
+                order: true,
+                isCorrect: true,
+              },
+              orderBy: { order: 'asc' },
+            },
+          },
+          orderBy: { order: 'asc' },
+        },
+      },
+    });
+
+    if (!topic) {
+      return null;
+    }
+
+    return {
+      topic: {
+        id: topic.id,
+        slug: topic.slug,
+        title: topic.title,
+        description: topic.description,
+        order: topic.order,
+      },
+      questions: topic.questions.map((question) => ({
+        id: question.id,
+        prompt: question.prompt,
+        codeSnippet: question.codeSnippet,
+        order: question.order,
+        options: question.options.map((option) => ({
+          id: option.id,
+          label: option.label,
+          text: option.text,
+          order: option.order,
+        })),
+        correctOptionIds: question.options
+          .filter((option) => option.isCorrect)
+          .map((option) => option.id),
+      })),
+    };
+  }
 }
