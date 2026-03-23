@@ -4,16 +4,13 @@ import {
   Injectable,
   ServiceUnavailableException,
 } from '@nestjs/common';
+import { Conversation } from '@prisma/client';
 
-import { ChatMessage, LlmClient } from '../../domain/clients/llm.client';
+import { ChatReplyClient } from '../../domain/clients/chat-reply.client';
+import { ChatMessage, ChatRole } from '../../domain/clients/llm.client';
 import { ConversationRepository } from '../../domain/repositories/conversation.repository';
 import { MessageRepository } from '../../domain/repositories/message.repository';
-import {
-  AI_CHAT_SYSTEM_PROMPT,
-  DEFAULT_MAX_MESSAGE_LENGTH,
-  MAX_CODE_SNIPPET_LENGTH,
-  MAX_HISTORY_MESSAGES,
-} from './ai-chat.constants';
+import { DEFAULT_MAX_MESSAGE_LENGTH, MAX_HISTORY_MESSAGES } from './ai-chat.constants';
 
 export type SendChatMessageInput = {
   userId: number;
@@ -34,12 +31,19 @@ export type SendChatMessageResult = {
   reply: string;
 };
 
+function asChatRole(role: string): ChatRole {
+  if (role === ChatRole.System || role === ChatRole.User || role === ChatRole.Assistant) {
+    return role;
+  }
+  return ChatRole.System;
+}
+
 @Injectable()
 export class SendChatMessageUseCase {
   constructor(
     private readonly conversationRepository: ConversationRepository,
     private readonly messageRepository: MessageRepository,
-    private readonly llmClient: LlmClient,
+    private readonly chatReplyClient: ChatReplyClient,
   ) {}
 
   async execute(input: SendChatMessageInput): Promise<SendChatMessageResult> {
@@ -55,76 +59,67 @@ export class SendChatMessageUseCase {
       throw new BadRequestException(`message must not exceed ${maxLength} characters`);
     }
 
-    let conversationId: string;
-    let history: { role: string; content: string }[] = [];
+    let conversation: Conversation;
+    let history: ChatMessage[] = [];
 
     if (input.conversationId) {
-      const conversation = await this.conversationRepository.findById(
-        input.conversationId,
-        input.userId,
-      );
-      if (!conversation) {
+      const found = await this.conversationRepository.findById(input.conversationId, input.userId);
+      if (!found) {
         throw new ForbiddenException('Conversation not found or access denied');
       }
-      if (conversation.userId !== input.userId) {
+      if (found.userId !== input.userId) {
         throw new ForbiddenException('Conversation not found or access denied');
       }
-      conversationId = conversation.id;
+      conversation = found;
       const lastMessages = await this.messageRepository.findLastByConversationId(
-        conversationId,
+        conversation.id,
         MAX_HISTORY_MESSAGES,
       );
-      history = lastMessages.map((m) => ({ role: m.role, content: m.content }));
+      history = lastMessages.map((m) => ({ role: asChatRole(m.role), content: m.content }));
     } else {
-      const conversation = await this.conversationRepository.create({
+      conversation = await this.conversationRepository.create({
         userId: input.userId,
         taskId: input.context?.taskId,
         taskType: input.context?.taskType,
         taskTitle: input.context?.taskTitle,
       });
-      conversationId = conversation.id;
     }
 
     await this.messageRepository.create({
-      conversationId,
-      role: 'user',
+      conversationId: conversation.id,
+      role: ChatRole.User,
       content: trimmed,
     });
 
-    const messagesForLlm: ChatMessage[] = [{ role: 'system', content: AI_CHAT_SYSTEM_PROMPT }];
-
-    if (input.context?.taskDescription) {
-      messagesForLlm.push({
-        role: 'system',
-        content: `Контекст задачи: ${input.context.taskDescription}`,
-      });
-    }
-    if (input.context?.codeSnippet) {
-      const snippet =
-        input.context.codeSnippet.length > MAX_CODE_SNIPPET_LENGTH
-          ? input.context.codeSnippet.slice(0, MAX_CODE_SNIPPET_LENGTH) + '...'
-          : input.context.codeSnippet;
-      messagesForLlm.push({
-        role: 'system',
-        content: `Фрагмент кода пользователя:\n${snippet}`,
-      });
-    }
-
-    for (const m of history) {
-      messagesForLlm.push({ role: m.role, content: m.content });
-    }
-    messagesForLlm.push({ role: 'user', content: trimmed });
+    const conversationId = conversation.id;
 
     let reply: string;
     try {
-      reply = await this.llmClient.chat(messagesForLlm);
+      const out = await this.chatReplyClient.reply({
+        userId: input.userId,
+        message: trimmed,
+        history,
+        context: {
+          taskTitle: input.context?.taskTitle,
+          taskDescription: input.context?.taskDescription,
+          codeSnippet: input.context?.codeSnippet,
+        },
+        difyConversationId: conversation.difyConversationId,
+      });
+      reply = out.reply;
+      if (out.difyConversationId && conversation.difyConversationId !== out.difyConversationId) {
+        await this.conversationRepository.setDifyConversationId(
+          conversationId,
+          out.difyConversationId,
+        );
+      }
     } catch {
       throw new ServiceUnavailableException('AI service temporarily unavailable');
     }
 
     const assistantMessage = await this.messageRepository.create({
       conversationId,
-      role: 'assistant',
+      role: ChatRole.Assistant,
       content: reply,
     });
 
