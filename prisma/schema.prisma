@@ -21,15 +21,16 @@ model User {
 }
 
 model Conversation {
-  id        String    @id @default(uuid())
-  userId    Int
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  taskId    String?
-  taskType  String?
-  taskTitle String?
-  messages  Message[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id                  String    @id @default(uuid())
+  userId              Int
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskId              String?
+  taskType            String?
+  taskTitle           String?
+  difyConversationId  String?
+  messages            Message[]
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   @@index([userId])
   @@map("conversations")
