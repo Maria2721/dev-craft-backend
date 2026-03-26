@@ -8,4 +8,5 @@ export abstract class ConversationRepository {
     taskType?: string;
     taskTitle?: string;
   }): Promise<Conversation>;
+  abstract setDifyConversationId(conversationId: string, difyConversationId: string): Promise<void>;
 }

@@ -20,4 +20,11 @@ export class PrismaConversationRepository extends ConversationRepository {
   async create(data: { userId: number; taskId?: string; taskType?: string; taskTitle?: string }) {
     return this.prisma.conversation.create({ data });
   }
+
+  async setDifyConversationId(conversationId: string, difyConversationId: string) {
+    await this.prisma.conversation.update({
+      where: { id: conversationId },
+      data: { difyConversationId },
+    });
+  }
 }

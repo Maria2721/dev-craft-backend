@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 
 import { SendChatMessageUseCase } from '../../../../src/application/ai/send-chat-message.use-case';
-import { LlmClient } from '../../../../src/domain/clients/llm.client';
+import { ChatReplyClient } from '../../../../src/domain/clients/chat-reply.client';
 import { ConversationRepository } from '../../../../src/domain/repositories/conversation.repository';
 import { MessageRepository } from '../../../../src/domain/repositories/message.repository';
 import { Conversation, Message } from '@prisma/client';
@@ -22,6 +22,7 @@ describe('SendChatMessageUseCase', () => {
     taskId: null,
     taskType: null,
     taskTitle: null,
+    difyConversationId: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -37,12 +38,13 @@ describe('SendChatMessageUseCase', () => {
 
   let conversationRepository: jest.Mocked<ConversationRepository>;
   let messageRepository: jest.Mocked<MessageRepository>;
-  let llmClient: jest.Mocked<LlmClient>;
+  let chatReplyClient: jest.Mocked<ChatReplyClient>;
 
   beforeEach(() => {
     conversationRepository = {
       findById: jest.fn(),
       create: jest.fn(),
+      setDifyConversationId: jest.fn(),
     } as unknown as jest.Mocked<ConversationRepository>;
 
     messageRepository = {
@@ -50,9 +52,9 @@ describe('SendChatMessageUseCase', () => {
       findLastByConversationId: jest.fn(),
     } as unknown as jest.Mocked<MessageRepository>;
 
-    llmClient = {
-      chat: jest.fn().mockResolvedValue('AI reply'),
-    } as unknown as jest.Mocked<LlmClient>;
+    chatReplyClient = {
+      reply: jest.fn().mockResolvedValue({ reply: 'AI reply' }),
+    } as unknown as jest.Mocked<ChatReplyClient>;
 
     delete process.env.AI_MAX_MESSAGE_LENGTH;
   });
@@ -61,7 +63,7 @@ describe('SendChatMessageUseCase', () => {
     const useCase = new SendChatMessageUseCase(
       conversationRepository,
       messageRepository,
-      llmClient,
+      chatReplyClient,
     );
 
     await expect(useCase.execute({ userId: 1, message: '   ' })).rejects.toThrow(
@@ -72,14 +74,14 @@ describe('SendChatMessageUseCase', () => {
     );
 
     expect(conversationRepository.create).not.toHaveBeenCalled();
-    expect(llmClient.chat).not.toHaveBeenCalled();
+    expect(chatReplyClient.reply).not.toHaveBeenCalled();
   });
 
   it('throws BadRequestException when message exceeds length limit', async () => {
     const useCase = new SendChatMessageUseCase(
       conversationRepository,
       messageRepository,
-      llmClient,
+      chatReplyClient,
     );
     const longMessage = 'a'.repeat(4001);
 
@@ -97,7 +99,7 @@ describe('SendChatMessageUseCase', () => {
     const useCase = new SendChatMessageUseCase(
       conversationRepository,
       messageRepository,
-      llmClient,
+      chatReplyClient,
     );
 
     await expect(
@@ -125,7 +127,7 @@ describe('SendChatMessageUseCase', () => {
     const useCase = new SendChatMessageUseCase(
       conversationRepository,
       messageRepository,
-      llmClient,
+      chatReplyClient,
     );
 
     const result = await useCase.execute({
@@ -139,7 +141,7 @@ describe('SendChatMessageUseCase', () => {
       taskType: undefined,
       taskTitle: undefined,
     });
-    expect(llmClient.chat).toHaveBeenCalled();
+    expect(chatReplyClient.reply).toHaveBeenCalled();
     expect(result).toEqual({
       conversationId: convId,
       messageId: 'msg-assistant',
@@ -150,12 +152,12 @@ describe('SendChatMessageUseCase', () => {
   it('throws ServiceUnavailableException when LLM fails', async () => {
     conversationRepository.create.mockResolvedValue(mockConversation);
     messageRepository.create.mockResolvedValue(createMockMessage('msg-user'));
-    llmClient.chat.mockRejectedValue(new Error('Network error'));
+    chatReplyClient.reply.mockRejectedValue(new Error('Network error'));
 
     const useCase = new SendChatMessageUseCase(
       conversationRepository,
       messageRepository,
-      llmClient,
+      chatReplyClient,
     );
 
     await expect(useCase.execute({ userId: 1, message: 'Hello' })).rejects.toThrow(
