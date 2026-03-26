@@ -29,9 +29,23 @@ services:
       MCP_BEARER_TOKEN: ${MCP_BEARER_TOKEN:-}
       SWAGGER_USER: ${SWAGGER_USER}
       SWAGGER_PASSWORD: ${SWAGGER_PASSWORD}
-    ports:
-      - "${PORT}:${PORT}"
     command: ["sh", "-c", "sleep 5 && exec node dist/main.js"]
+
+  caddy:
+    image: caddy:2.11-alpine
+    restart: on-failure
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      PUBLIC_DOMAIN: ${PUBLIC_DOMAIN}
+      APP_UPSTREAM_PORT: ${PORT:-6969}
+    volumes:
+      - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
 
   postgres:
     image: postgres:18-alpine
@@ -40,7 +54,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     ports:
-      - "${POSTGRES_HOST_PORT:-5433}:5432"
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-5433}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql
     healthcheck:
@@ -51,3 +65,5 @@ services:
 
 volumes:
   postgres_data:
+  caddy_data:
+  caddy_config:
