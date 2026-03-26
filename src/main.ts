@@ -2,6 +2,7 @@ import 'reflect-metadata';
 
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
 import basicAuth from 'express-basic-auth';
 import { readFileSync } from 'fs';
@@ -11,7 +12,8 @@ import { join } from 'path';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  app.set('trust proxy', true);
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
   const corsOrigin = process.env.CORS_ORIGIN ?? 'http://localhost:5173';
   app.enableCors({ origin: corsOrigin });
