@@ -4,6 +4,7 @@ coverage
 docs/
 .env
 .env.local
+docker-compose.override.yml
 *.local
 logs
 *.log
