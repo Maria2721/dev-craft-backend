@@ -1,0 +1,5 @@
+# Local development without Caddy: copy to docker-compose.override.yml (gitignored)
+services:
+  app:
+    ports:
+      - "${PORT:-6969}:${PORT:-6969}"
