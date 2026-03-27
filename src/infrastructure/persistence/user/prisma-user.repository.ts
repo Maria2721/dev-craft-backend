@@ -13,6 +13,10 @@ export class PrismaUserRepository extends UserRepository {
     return this.prisma.user.findUnique({ where: { email } });
   }
 
+  async findById(id: number) {
+    return this.prisma.user.findUnique({ where: { id } });
+  }
+
   async create(data: { email: string; passwordHash: string; name: string; surname: string }) {
     return this.prisma.user.create({ data });
   }
