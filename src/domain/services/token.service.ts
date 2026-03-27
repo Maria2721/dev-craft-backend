@@ -4,4 +4,6 @@ export abstract class TokenService {
     refreshToken: string;
     expiresIn: number;
   }>;
+
+  abstract verifyRefreshToken(token: string): Promise<{ userId: number }>;
 }
