@@ -15,8 +15,11 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.set('trust proxy', true);
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
-  const corsOrigin = process.env.CORS_ORIGIN ?? 'http://localhost:5173';
-  app.enableCors({ origin: corsOrigin });
+  const corsOrigins = (process.env.CORS_ORIGIN ?? 'http://localhost:5173')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  app.enableCors({ origin: corsOrigins });
 
   if (process.env.SWAGGER_USER && process.env.SWAGGER_PASSWORD) {
     app.use(
