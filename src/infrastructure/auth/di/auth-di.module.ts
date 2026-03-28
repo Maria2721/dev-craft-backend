@@ -3,6 +3,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 
 import { LoginUseCase } from '../../../application/auth/login.use-case';
+import { RefreshUseCase } from '../../../application/auth/refresh.use-case';
 import { RegisterUseCase } from '../../../application/auth/register.use-case';
 import { UserRepository } from '../../../domain/repositories/user.repository';
 import { TokenService } from '../../../domain/services/token.service';
@@ -30,7 +31,8 @@ import { JwtTokenService } from '../jwt-token.service';
     JwtAuthGuard,
     RegisterUseCase,
     LoginUseCase,
+    RefreshUseCase,
   ],
-  exports: [RegisterUseCase, LoginUseCase, JwtAuthGuard],
+  exports: [RegisterUseCase, LoginUseCase, RefreshUseCase, JwtAuthGuard],
 })
 export class AuthDiModule {}

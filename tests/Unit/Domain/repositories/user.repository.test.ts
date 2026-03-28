@@ -19,6 +19,9 @@ class MockUserRepository extends UserRepository {
   async findByEmail(): Promise<User | null> {
     return mockUser;
   }
+  async findById(): Promise<User | null> {
+    return mockUser;
+  }
   async create(): Promise<User> {
     return mockUser;
   }
