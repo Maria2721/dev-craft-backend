@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { SendChatMessageUseCase } from '../../../application/ai/send-chat-message.use-case';
+import { SendDiscordChannelChatMessageUseCase } from '../../../application/ai/send-discord-channel-chat-message.use-case';
 import { ChatReplyClient } from '../../../domain/clients/chat-reply.client';
 import { LlmClient } from '../../../domain/clients/llm.client';
 import { ConversationRepository } from '../../../domain/repositories/conversation.repository';
@@ -56,7 +57,8 @@ function createChatReplyClient(): ChatReplyClient {
     { provide: MessageRepository, useClass: PrismaMessageRepository },
     { provide: ChatReplyClient, useFactory: createChatReplyClient },
     SendChatMessageUseCase,
+    SendDiscordChannelChatMessageUseCase,
   ],
-  exports: [SendChatMessageUseCase],
+  exports: [SendChatMessageUseCase, SendDiscordChannelChatMessageUseCase],
 })
 export class AiDiModule {}
