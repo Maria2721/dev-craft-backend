@@ -27,11 +27,32 @@ services:
       AI_DIFY_END_USER: ${AI_DIFY_END_USER:-}
       AI_DIFY_USE_CONTEXT_INPUTS: ${AI_DIFY_USE_CONTEXT_INPUTS:-}
       MCP_BEARER_TOKEN: ${MCP_BEARER_TOKEN:-}
+      DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN:-}
+      DISCORD_BOT_CONVERSATION_USER_ID: ${DISCORD_BOT_CONVERSATION_USER_ID:-}
+      DISCORD_BOT_INTERNAL_API_TOKEN: ${DISCORD_BOT_INTERNAL_API_TOKEN:-}
       SWAGGER_USER: ${SWAGGER_USER}
       SWAGGER_PASSWORD: ${SWAGGER_PASSWORD}
     command: ["sh", "-c", "sleep 5 && exec node dist/main.js"]
 
+  discord-bot:
+    build:
+      context: .
+      dockerfile: docker/discord-bot/Dockerfile
+    restart: on-failure
+    depends_on:
+      app:
+        condition: service_started
+    environment:
+      DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN:-}
+      AI_DIFY_BASE_URL: ${AI_DIFY_BASE_URL:-}
+      AI_DIFY_APP_API_KEY: ${AI_DIFY_APP_API_KEY:-}
+      DISCORD_BOT_CHANNEL_ID: ${DISCORD_BOT_CHANNEL_ID:-}
+      INTERNAL_CHAT_API_BASE_URL: http://app:${PORT:-6969}
+      DISCORD_BOT_INTERNAL_API_TOKEN: ${DISCORD_BOT_INTERNAL_API_TOKEN:-}
+
   caddy:
+    profiles:
+      - caddy
     image: caddy:2.11-alpine
     restart: on-failure
     depends_on:
