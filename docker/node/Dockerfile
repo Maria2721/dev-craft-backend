@@ -1,3 +1,4 @@
+# Multi-stage build: step 1 - install deps, Prisma generate, Nest build
 FROM node:22-alpine AS builder
 
 WORKDIR /app
@@ -15,6 +16,7 @@ RUN npm run build
 COPY jest.config.js tsconfig.jest.json ./
 COPY tests ./tests
 
+# Multi-stage build: step 2 - runtime image
 FROM node:22-alpine
 
 WORKDIR /app
@@ -24,6 +26,9 @@ COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
+COPY prisma ./prisma
+COPY seed ./seed
+COPY scripts ./scripts
 COPY --from=builder /app/jest.config.js ./jest.config.js
 COPY --from=builder /app/tsconfig.json ./tsconfig.json
 COPY --from=builder /app/tsconfig.jest.json ./tsconfig.jest.json
