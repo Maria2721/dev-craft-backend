@@ -12,6 +12,8 @@ export type ChatReplyInput = {
   history: ChatMessage[];
   context?: ChatReplyContext;
   difyConversationId?: string | null;
+  difyEndUser?: string;
+  difyInputOverrides?: Record<string, string | number | boolean>;
 };
 
 export type ChatReplyOutput = {
