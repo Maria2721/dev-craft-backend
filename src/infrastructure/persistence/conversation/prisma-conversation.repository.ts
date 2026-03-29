@@ -17,7 +17,20 @@ export class PrismaConversationRepository extends ConversationRepository {
     return this.prisma.conversation.findFirst({ where });
   }
 
-  async create(data: { userId: number; taskId?: string; taskType?: string; taskTitle?: string }) {
+  async findByDiscordChannelAndUser(discordChannelId: string, discordUserId: string) {
+    return this.prisma.conversation.findFirst({
+      where: { discordChannelId, discordUserId },
+    });
+  }
+
+  async create(data: {
+    userId: number;
+    taskId?: string;
+    taskType?: string;
+    taskTitle?: string;
+    discordChannelId?: string;
+    discordUserId?: string;
+  }) {
     return this.prisma.conversation.create({ data });
   }
 
