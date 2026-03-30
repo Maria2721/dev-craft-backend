@@ -28,11 +28,14 @@ model Conversation {
   taskType            String?
   taskTitle           String?
   difyConversationId  String?
+  discordChannelId    String?
+  discordUserId       String?
   messages            Message[]
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
   @@index([userId])
+  @@index([discordChannelId, discordUserId])
   @@map("conversations")
 }
 

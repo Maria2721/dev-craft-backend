@@ -23,6 +23,8 @@ describe('SendChatMessageUseCase', () => {
     taskType: null,
     taskTitle: null,
     difyConversationId: null,
+    discordChannelId: null,
+    discordUserId: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -43,6 +45,7 @@ describe('SendChatMessageUseCase', () => {
   beforeEach(() => {
     conversationRepository = {
       findById: jest.fn(),
+      findByDiscordChannelAndUser: jest.fn(),
       create: jest.fn(),
       setDifyConversationId: jest.fn(),
     } as unknown as jest.Mocked<ConversationRepository>;

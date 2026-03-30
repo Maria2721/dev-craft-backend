@@ -2,12 +2,18 @@
   "name": "dev-craft-backend",
   "version": "0.1.0",
   "private": true,
+  "prisma": {
+    "seed": "node scripts/seed-discord-system-user.cjs"
+  },
   "scripts": {
     "build": "nest build",
+    "build:discord-bot": "tsc -p tsconfig.discord-bot.json",
+    "dev:discord-bot": "tsx watch src/discord-bot/main.ts",
     "start": "node dist/main.js",
     "start:dev": "nest start --watch",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
+    "db:seed": "node scripts/seed-discord-system-user.cjs",
     "knowledge:import": "node scripts/import-knowledge.cjs",
     "lint": "eslint .",
     "test": "jest",
@@ -40,6 +46,8 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "cors": "^2.8.5",
+    "discord.js": "^14.25.1",
+    "dotenv": "^16.6.1",
     "express": "^4.21.0",
     "express-basic-auth": "^1.2.1",
     "js-yaml": "^4.1.1",
@@ -70,6 +78,7 @@
     "prettier": "^3.8.1",
     "prisma": "^6.0.0",
     "ts-jest": "^29.2.5",
+    "tsx": "^4.21.0",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.48.0"
   }
