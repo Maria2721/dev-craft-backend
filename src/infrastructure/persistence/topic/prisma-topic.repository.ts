@@ -161,6 +161,7 @@ export class PrismaTopicRepository extends TopicRepository {
             title: true,
             description: true,
             taskType: true,
+            referenceSolution: true,
             order: true,
           },
           orderBy: { order: 'asc' },
@@ -186,6 +187,7 @@ export class PrismaTopicRepository extends TopicRepository {
         description: task.description,
         taskType: task.taskType,
         order: task.order,
+        referenceSolution: task.taskType === 'DRAG_DROP' ? task.referenceSolution : null,
       })),
     };
   }
