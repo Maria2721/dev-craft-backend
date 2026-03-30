@@ -27,6 +27,10 @@ export interface TopicCodeTaskPreview {
   order: number;
 }
 
+export interface TopicCodeTaskItem extends TopicCodeTaskPreview {
+  referenceSolution: string | null;
+}
+
 export interface TopicPreview {
   topic: TopicBase;
   questions: TopicQuestionPreview[];
@@ -53,7 +57,7 @@ export interface TopicQuestions {
 
 export interface TopicCodeTasks {
   topic: TopicBase;
-  codeTasks: TopicCodeTaskPreview[];
+  codeTasks: TopicCodeTaskItem[];
 }
 
 export abstract class TopicRepository {
