@@ -9,10 +9,8 @@ import { ChatReplyClient } from '../../domain/clients/chat-reply.client';
 import { CodeTaskRepository } from '../../domain/repositories/code-task.repository';
 import { CodeTaskAttemptRepository } from '../../domain/repositories/code-task-attempt.repository';
 import { buildCodeTaskAiCheckPrompt } from './code-task-ai-check.constants';
-import {
-  CodeTaskAiCheckParseError,
-  parseCodeTaskAiCheckReply,
-} from './parse-code-task-ai-check-reply';
+import { CodeTaskAiCheckParseError } from './code-task-ai-check-parse.error';
+import { CodeTaskAiCheckReplyParser } from './parse-code-task-ai-check-reply';
 
 export interface SubmitCodeTaskAiCheckInput {
   userId: number;
@@ -76,7 +74,7 @@ export class SubmitCodeTaskAiCheckUseCase {
 
     let parsed;
     try {
-      parsed = parseCodeTaskAiCheckReply(replyText);
+      parsed = CodeTaskAiCheckReplyParser.parse(replyText);
     } catch (err) {
       if (err instanceof CodeTaskAiCheckParseError) {
         throw new ServiceUnavailableException('AI service temporarily unavailable');
