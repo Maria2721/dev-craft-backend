@@ -8,29 +8,30 @@ datasource db {
 }
 
 model User {
-  id            Int            @id @default(autoincrement())
-  name          String
-  surname       String
-  email         String         @unique
-  passwordHash  String
-  createdAt     DateTime       @default(now())
-  conversations Conversation[]
+  id               Int               @id @default(autoincrement())
+  name             String
+  surname          String
+  email            String            @unique
+  passwordHash     String
+  createdAt        DateTime          @default(now())
+  conversations    Conversation[]
   questionAttempts QuestionAttempt[]
+  codeTaskAttempts CodeTaskAttempt[]
 
   @@map("users")
 }
 
 model Conversation {
-  id                  String    @id @default(uuid())
-  userId              Int
-  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  taskId              String?
-  taskType            String?
-  taskTitle           String?
-  difyConversationId  String?
-  discordChannelId    String?
-  discordUserId       String?
-  messages            Message[]
+  id                 String    @id @default(uuid())
+  userId             Int
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskId             String?
+  taskType           String?
+  taskTitle          String?
+  difyConversationId String?
+  discordChannelId   String?
+  discordUserId      String?
+  messages           Message[]
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
@@ -62,31 +63,32 @@ enum CodeTaskType {
 }
 
 model Topic {
-  id          String     @id @default(uuid())
-  slug        String     @unique
-  title       String
-  description String?
-  order       Int
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  questions   Question[]
-  codeTasks   CodeTask[]
+  id               String            @id @default(uuid())
+  slug             String            @unique
+  title            String
+  description      String?
+  order            Int
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  questions        Question[]
+  codeTasks        CodeTask[]
   questionAttempts QuestionAttempt[]
+  codeTaskAttempts CodeTaskAttempt[]
 
   @@index([order])
   @@map("topics")
 }
 
 model Question {
-  id          String         @id @default(uuid())
+  id          String            @id @default(uuid())
   topicId     String
-  topic       Topic          @relation(fields: [topicId], references: [id])
-  prompt      String         @db.Text
-  codeSnippet String?        @db.Text
+  topic       Topic             @relation(fields: [topicId], references: [id])
+  prompt      String            @db.Text
+  codeSnippet String?           @db.Text
   type        QuestionType
   order       Int
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
   options     QuestionOption[]
   attempts    QuestionAttempt[]
 
@@ -108,19 +110,39 @@ model QuestionOption {
 }
 
 model CodeTask {
-  id                String       @id @default(uuid())
+  id                String            @id @default(uuid())
   topicId           String
-  topic             Topic        @relation(fields: [topicId], references: [id])
+  topic             Topic             @relation(fields: [topicId], references: [id])
   title             String
-  description       String       @db.Text
+  description       String            @db.Text
   taskType          CodeTaskType
-  referenceSolution String?      @db.Text
+  referenceSolution String?           @db.Text
   order             Int
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  codeTaskAttempts  CodeTaskAttempt[]
 
   @@index([topicId, order])
   @@map("code_tasks")
+}
+
+model CodeTaskAttempt {
+  id            String   @id @default(uuid())
+  userId        Int
+  user          User     @relation(fields: [userId], references: [id])
+  topicId       String
+  topic         Topic    @relation(fields: [topicId], references: [id])
+  codeTaskId    String
+  codeTask      CodeTask @relation(fields: [codeTaskId], references: [id])
+  valid         Boolean
+  hints         String?  @db.Text
+  justification String?  @db.Text
+  improvements  String?  @db.Text
+  createdAt     DateTime @default(now())
+
+  @@index([userId, topicId])
+  @@index([codeTaskId])
+  @@map("code_task_attempts")
 }
 
 model QuestionAttempt {
