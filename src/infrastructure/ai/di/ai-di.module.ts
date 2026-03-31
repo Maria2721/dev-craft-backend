@@ -59,6 +59,6 @@ function createChatReplyClient(): ChatReplyClient {
     SendChatMessageUseCase,
     SendDiscordChannelChatMessageUseCase,
   ],
-  exports: [SendChatMessageUseCase, SendDiscordChannelChatMessageUseCase],
+  exports: [ChatReplyClient, SendChatMessageUseCase, SendDiscordChannelChatMessageUseCase],
 })
 export class AiDiModule {}
