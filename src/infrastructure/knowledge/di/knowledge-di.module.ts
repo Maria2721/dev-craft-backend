@@ -5,6 +5,7 @@ import { GetTopicCodeTasksUseCase } from '../../../application/knowledge/get-top
 import { GetTopicPreviewUseCase } from '../../../application/knowledge/get-topic-preview.use-case';
 import { GetTopicQuestionsUseCase } from '../../../application/knowledge/get-topic-questions.use-case';
 import { SubmitCodeTaskAiCheckUseCase } from '../../../application/knowledge/submit-code-task-ai-check.use-case';
+import { SubmitCodeTaskDragDropUseCase } from '../../../application/knowledge/submit-code-task-drag-drop.use-case';
 import { SubmitTopicQuestionAttemptsUseCase } from '../../../application/knowledge/submit-topic-question-attempts.use-case';
 import { CodeTaskRepository } from '../../../domain/repositories/code-task.repository';
 import { CodeTaskAttemptRepository } from '../../../domain/repositories/code-task-attempt.repository';
@@ -33,6 +34,7 @@ import { PrismaTopicRepository } from '../../persistence/topic/prisma-topic.repo
     GetTopicQuestionsUseCase,
     SubmitTopicQuestionAttemptsUseCase,
     SubmitCodeTaskAiCheckUseCase,
+    SubmitCodeTaskDragDropUseCase,
   ],
   exports: [
     GetKnowledgeTopicsUseCase,
@@ -41,6 +43,7 @@ import { PrismaTopicRepository } from '../../persistence/topic/prisma-topic.repo
     GetTopicQuestionsUseCase,
     SubmitTopicQuestionAttemptsUseCase,
     SubmitCodeTaskAiCheckUseCase,
+    SubmitCodeTaskDragDropUseCase,
   ],
 })
 export class KnowledgeDiModule {}

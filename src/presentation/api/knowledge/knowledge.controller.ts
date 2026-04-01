@@ -15,10 +15,12 @@ import { GetTopicCodeTasksUseCase } from '../../../application/knowledge/get-top
 import { GetTopicPreviewUseCase } from '../../../application/knowledge/get-topic-preview.use-case';
 import { GetTopicQuestionsUseCase } from '../../../application/knowledge/get-topic-questions.use-case';
 import { SubmitCodeTaskAiCheckUseCase } from '../../../application/knowledge/submit-code-task-ai-check.use-case';
+import { SubmitCodeTaskDragDropUseCase } from '../../../application/knowledge/submit-code-task-drag-drop.use-case';
 import { SubmitTopicQuestionAttemptsUseCase } from '../../../application/knowledge/submit-topic-question-attempts.use-case';
 import { User } from '../../decorators/user.decorator';
 import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
 import { PostCodeTaskAiCheckDto } from './dto/post-code-task-ai-check.dto';
+import { PostCodeTaskDragDropDto } from './dto/post-code-task-drag-drop.dto';
 import { PostTopicQuestionAttemptsDto } from './dto/post-topic-question-attempts.dto';
 
 @Controller('knowledge/topics')
@@ -30,6 +32,7 @@ export class KnowledgeController {
     private readonly getTopicQuestionsUseCase: GetTopicQuestionsUseCase,
     private readonly submitTopicQuestionAttemptsUseCase: SubmitTopicQuestionAttemptsUseCase,
     private readonly submitCodeTaskAiCheckUseCase: SubmitCodeTaskAiCheckUseCase,
+    private readonly submitCodeTaskDragDropUseCase: SubmitCodeTaskDragDropUseCase,
   ) {}
 
   @Get()
@@ -63,6 +66,24 @@ export class KnowledgeController {
     @Body() dto: PostCodeTaskAiCheckDto,
   ) {
     return this.submitCodeTaskAiCheckUseCase.execute({
+      userId,
+      topicId,
+      codeTaskId,
+      code: dto.code,
+    });
+  }
+
+  @Post(':topicId/code-tasks/:codeTaskId/drag-drop')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  @Throttle({ default: { ttl: 3_600_000, limit: 50 } })
+  async submitCodeTaskDragDrop(
+    @Param('topicId') topicId: string,
+    @Param('codeTaskId') codeTaskId: string,
+    @User('userId') userId: number,
+    @Body() dto: PostCodeTaskDragDropDto,
+  ) {
+    return this.submitCodeTaskDragDropUseCase.execute({
       userId,
       topicId,
       codeTaskId,
