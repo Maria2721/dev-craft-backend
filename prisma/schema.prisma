@@ -7,18 +7,62 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum OAuthProvider {
+  GOOGLE
+  GITHUB
+}
+
 model User {
-  id               Int               @id @default(autoincrement())
-  name             String
-  surname          String
-  email            String            @unique
-  passwordHash     String
-  createdAt        DateTime          @default(now())
-  conversations    Conversation[]
-  questionAttempts QuestionAttempt[]
-  codeTaskAttempts CodeTaskAttempt[]
+  id                 Int                 @id @default(autoincrement())
+  name               String
+  surname            String
+  email              String              @unique
+  passwordHash       String?
+  createdAt          DateTime            @default(now())
+  conversations      Conversation[]
+  questionAttempts   QuestionAttempt[]
+  codeTaskAttempts   CodeTaskAttempt[]
+  oauthAccounts      OAuthAccount[]
+  oauthExchangeCodes OAuthExchangeCode[]
 
   @@map("users")
+}
+
+model OAuthAccount {
+  id                String        @id @default(uuid())
+  userId            Int
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider          OAuthProvider
+  providerAccountId String
+  createdAt         DateTime      @default(now())
+
+  @@unique([provider, providerAccountId])
+  @@unique([userId, provider])
+  @@index([userId])
+  @@map("oauth_accounts")
+}
+
+model OAuthState {
+  id        String        @id @default(uuid())
+  state     String        @unique
+  provider  OAuthProvider
+  expiresAt DateTime
+  createdAt DateTime      @default(now())
+
+  @@index([expiresAt])
+  @@map("oauth_states")
+}
+
+model OAuthExchangeCode {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([expiresAt])
+  @@map("oauth_exchange_codes")
 }
 
 model Conversation {
