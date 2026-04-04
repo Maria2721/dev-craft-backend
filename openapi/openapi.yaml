@@ -196,6 +196,15 @@ components:
           description: Refresh token previously issued by register or login.
           example: eyJhbGciOiJIUzI1NiIs...
 
+    OAuthExchangeRequest:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          description: One-time code issued after OAuth redirect to the frontend callback URL.
+
     KnowledgeTopicListItem:
       type: object
       properties:
@@ -652,6 +661,125 @@ paths:
               example:
                 message: ThrottlerException — Too Many Requests
                 statusCode: 429
+
+  /auth/oauth/exchange:
+    post:
+      tags:
+        - Auth
+      summary: Exchange OAuth one-time code for JWT tokens
+      description: |
+        After the browser returns from Google/GitHub with a one-time `code` query parameter,
+        the SPA sends that code here to receive the same `AuthResponse` as email/password login.
+        Rate limit — 30 requests per minute per IP (throttler on this route).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OAuthExchangeRequest"
+      responses:
+        "200":
+          description: Tokens issued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
+        "401":
+          description: Invalid or expired exchange code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                message: Invalid or expired exchange code
+                error: Unauthorized
+                statusCode: 401
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /auth/google:
+    get:
+      tags:
+        - Auth
+      summary: Start Google OAuth (redirect)
+      description: Redirects the browser to Google. Requires `GOOGLE_*` env on the server.
+      responses:
+        "302":
+          description: Redirect to Google authorization page
+        "500":
+          description: Google OAuth is not configured
+
+  /auth/google/callback:
+    get:
+      tags:
+        - Auth
+      summary: Google OAuth callback (redirect)
+      description: |
+        Handles the redirect from Google, then redirects the browser to `FRONTEND_OAUTH_REDIRECT`
+        with a one-time `code` or `error` query parameter.
+      parameters:
+        - in: query
+          name: code
+          schema:
+            type: string
+        - in: query
+          name: state
+          schema:
+            type: string
+        - in: query
+          name: error
+          schema:
+            type: string
+      responses:
+        "302":
+          description: Redirect to SPA callback or error redirect
+
+  /auth/github:
+    get:
+      tags:
+        - Auth
+      summary: Start GitHub OAuth (redirect)
+      description: Redirects the browser to GitHub. Requires `GITHUB_*` env on the server.
+      responses:
+        "302":
+          description: Redirect to GitHub authorization page
+        "500":
+          description: GitHub OAuth is not configured
+
+  /auth/github/callback:
+    get:
+      tags:
+        - Auth
+      summary: GitHub OAuth callback (redirect)
+      description: |
+        Handles the redirect from GitHub, then redirects the browser to `FRONTEND_OAUTH_REDIRECT`
+        with a one-time `code` or `error` query parameter.
+      parameters:
+        - in: query
+          name: code
+          schema:
+            type: string
+        - in: query
+          name: state
+          schema:
+            type: string
+        - in: query
+          name: error
+          schema:
+            type: string
+      responses:
+        "302":
+          description: Redirect to SPA callback or error redirect
 
   /ai/chat:
     post:
