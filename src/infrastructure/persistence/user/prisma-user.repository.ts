@@ -17,7 +17,19 @@ export class PrismaUserRepository extends UserRepository {
     return this.prisma.user.findUnique({ where: { id } });
   }
 
-  async create(data: { email: string; passwordHash: string; name: string; surname: string }) {
-    return this.prisma.user.create({ data });
+  async create(data: {
+    email: string;
+    passwordHash?: string | null;
+    name: string;
+    surname: string;
+  }) {
+    return this.prisma.user.create({
+      data: {
+        email: data.email,
+        name: data.name,
+        surname: data.surname,
+        passwordHash: data.passwordHash ?? null,
+      },
+    });
   }
 }
