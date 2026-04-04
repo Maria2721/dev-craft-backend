@@ -42,6 +42,18 @@ describe('LoginUseCase', () => {
     } as unknown as jest.Mocked<TokenService>;
   });
 
+  it('throws UnauthorizedException when user has no password (OAuth-only)', async () => {
+    userRepository.findByEmail.mockResolvedValue({ ...mockUser, passwordHash: null });
+
+    const useCase = new LoginUseCase(userRepository, tokenService);
+
+    await expect(useCase.execute({ email: mockUser.email, password: 'any' })).rejects.toThrow(
+      UnauthorizedException,
+    );
+    expect(bcrypt.compare).not.toHaveBeenCalled();
+    expect(tokenService.generateTokens).not.toHaveBeenCalled();
+  });
+
   it('throws UnauthorizedException when user is not found', async () => {
     userRepository.findByEmail.mockResolvedValue(null);
 
