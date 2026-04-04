@@ -5,7 +5,7 @@ export abstract class UserRepository {
   abstract findById(id: number): Promise<User | null>;
   abstract create(data: {
     email: string;
-    passwordHash: string;
+    passwordHash?: string | null;
     name: string;
     surname: string;
   }): Promise<User>;
