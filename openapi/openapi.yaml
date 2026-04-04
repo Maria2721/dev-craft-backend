@@ -2,10 +2,10 @@ openapi: 3.0.3
 info:
   title: DevCraft API
   description: Backend API for DevCraft — interview preparation platform (JavaScript & TypeScript).
-  version: 0.1.0
+  version: 0.2.0
 
 servers:
-  - url: http://155.212.208.175:6969
+  - url: https://techlaunch.pw
     description: Production server
   - url: http://localhost:6969
     description: Local development
@@ -16,6 +16,23 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+
+    InternalToken:
+      type: apiKey
+      in: header
+      name: x-internal-token
+      description: Shared secret from env `DISCORD_BOT_INTERNAL_API_TOKEN`.
+
+    InternalBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: internal token
+      description: Same secret as `DISCORD_BOT_INTERNAL_API_TOKEN` (alternative to `x-internal-token`).
+
+    McpBearerAuth:
+      type: http
+      scheme: bearer
+      description: Optional; required when env `MCP_BEARER_TOKEN` is set on the server.
 
   schemas:
     User:
@@ -100,11 +117,13 @@ components:
         message:
           type: string
           maxLength: 4000
+          description: |
+            Non-empty after trim. Maximum length defaults to 4000; can be overridden with env `AI_MAX_MESSAGE_LENGTH`.
           example: "Привет, расскажи про тип данных Symbol"
         conversationId:
           type: string
           format: uuid
-          description: Pass existing ID to continue a conversation
+          description: Existing conversation ID to continue; must belong to the authenticated user.
           example: 0c100aa0-2a1a-4372-86c5-9bdd42b07f2c
         context:
           type: object
@@ -167,12 +186,326 @@ components:
         statusCode:
           type: integer
 
+    RefreshRequest:
+      type: object
+      required:
+        - refreshToken
+      properties:
+        refreshToken:
+          type: string
+          description: Refresh token previously issued by register or login.
+          example: eyJhbGciOiJIUzI1NiIs...
+
+    KnowledgeTopicListItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        order:
+          type: integer
+        questionsCount:
+          type: integer
+        codeTasksCount:
+          type: integer
+
+    TopicBase:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        order:
+          type: integer
+
+    TopicQuestionPreviewItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        prompt:
+          type: string
+        order:
+          type: integer
+
+    CodeTaskType:
+      type: string
+      enum:
+        - AI_CHECK
+        - DRAG_DROP
+
+    TopicCodeTaskPreviewItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        taskType:
+          $ref: "#/components/schemas/CodeTaskType"
+        order:
+          type: integer
+
+    TopicPreviewResponse:
+      type: object
+      properties:
+        topic:
+          $ref: "#/components/schemas/TopicBase"
+        questions:
+          type: array
+          items:
+            $ref: "#/components/schemas/TopicQuestionPreviewItem"
+        codeTasks:
+          type: array
+          items:
+            $ref: "#/components/schemas/TopicCodeTaskPreviewItem"
+
+    TopicQuestionOption:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        label:
+          type: string
+        text:
+          type: string
+        order:
+          type: integer
+
+    TopicQuestionDetails:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        prompt:
+          type: string
+        codeSnippet:
+          type: string
+          nullable: true
+        order:
+          type: integer
+        options:
+          type: array
+          items:
+            $ref: "#/components/schemas/TopicQuestionOption"
+        correctOptionIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+
+    TopicQuestionsResponse:
+      type: object
+      properties:
+        topic:
+          $ref: "#/components/schemas/TopicBase"
+        questions:
+          type: array
+          items:
+            $ref: "#/components/schemas/TopicQuestionDetails"
+
+    TopicCodeTaskItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        taskType:
+          $ref: "#/components/schemas/CodeTaskType"
+        order:
+          type: integer
+        referenceSolution:
+          type: string
+          nullable: true
+          description: Present only for DRAG_DROP tasks; null for AI_CHECK.
+
+    TopicCodeTasksResponse:
+      type: object
+      properties:
+        topic:
+          $ref: "#/components/schemas/TopicBase"
+        codeTasks:
+          type: array
+          items:
+            $ref: "#/components/schemas/TopicCodeTaskItem"
+
+    PostCodeTaskSubmissionRequest:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          description: |
+            Submitted source code. Max length defaults to 4000; can be overridden with env `AI_MAX_MESSAGE_LENGTH`.
+          maxLength: 4000
+
+    SubmitCodeTaskAiCheckResponse:
+      type: object
+      properties:
+        codeTaskId:
+          type: string
+          format: uuid
+        attemptId:
+          type: string
+          format: uuid
+        valid:
+          type: boolean
+        hints:
+          type: string
+          nullable: true
+        justification:
+          type: string
+          nullable: true
+        improvements:
+          type: string
+          nullable: true
+
+    SubmitCodeTaskDragDropResponse:
+      type: object
+      properties:
+        codeTaskId:
+          type: string
+          format: uuid
+        attemptId:
+          type: string
+          format: uuid
+        valid:
+          type: boolean
+        hints:
+          type: string
+          nullable: true
+        justification:
+          type: string
+          nullable: true
+        improvements:
+          type: string
+          nullable: true
+
+    TopicQuestionAttemptInput:
+      type: object
+      required:
+        - questionId
+        - selectedOptionIds
+      properties:
+        questionId:
+          type: string
+          format: uuid
+        selectedOptionIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+
+    PostTopicQuestionAttemptsRequest:
+      type: object
+      required:
+        - attempts
+      properties:
+        attempts:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/TopicQuestionAttemptInput"
+
+    TopicQuestionAttemptResult:
+      type: object
+      properties:
+        questionId:
+          type: string
+          format: uuid
+        selectedOptionIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        correctOptionIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        isCorrect:
+          type: boolean
+
+    TopicQuestionAttemptsSummary:
+      type: object
+      properties:
+        submitted:
+          type: integer
+        correct:
+          type: integer
+
+    TopicQuestionProgress:
+      type: object
+      properties:
+        totalQuestions:
+          type: integer
+        attempted:
+          type: integer
+        correct:
+          type: integer
+
+    SubmitTopicQuestionAttemptsResponse:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/TopicQuestionAttemptResult"
+        summary:
+          $ref: "#/components/schemas/TopicQuestionAttemptsSummary"
+        topicProgress:
+          $ref: "#/components/schemas/TopicQuestionProgress"
+
+    PostDiscordChatRequest:
+      type: object
+      required:
+        - discordChannelId
+        - discordUserId
+        - message
+      properties:
+        discordChannelId:
+          type: string
+          maxLength: 32
+        discordUserId:
+          type: string
+          maxLength: 32
+        message:
+          type: string
+          maxLength: 4000
+          description: Max length follows env `AI_MAX_MESSAGE_LENGTH` when set.
+
 paths:
   /health:
     get:
       tags:
         - Health
       summary: Health check
+      description: Rate limit — 200 requests per hour per IP.
       responses:
         "200":
           description: Service is running
@@ -231,7 +564,9 @@ paths:
       tags:
         - Auth
       summary: Log in
-      description: Authenticates user by email and password, returns JWT tokens.
+      description: |
+        Authenticates user by email and password, returns JWT tokens.
+        Global default rate limit — 30 requests per minute per IP (app-wide throttler).
       requestBody:
         required: true
         content:
@@ -261,6 +596,62 @@ paths:
                 message: Invalid credentials
                 error: Unauthorized
                 statusCode: 401
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                message: ThrottlerException — Too Many Requests
+                statusCode: 429
+
+  /auth/refresh:
+    post:
+      tags:
+        - Auth
+      summary: Refresh JWT tokens
+      description: |
+        Exchanges a valid refresh token for new access and refresh tokens.
+        Global default rate limit — 30 requests per minute per IP (app-wide throttler).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshRequest"
+      responses:
+        "200":
+          description: New tokens issued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
+        "401":
+          description: Invalid or expired refresh token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                message: Invalid or expired refresh token
+                error: Unauthorized
+                statusCode: 401
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                message: ThrottlerException — Too Many Requests
+                statusCode: 429
 
   /ai/chat:
     post:
@@ -271,6 +662,7 @@ paths:
         Sends a user message to the AI assistant and returns a reply.
         Pass conversationId to continue an existing conversation.
         Rate limit — 50 requests per hour per IP. Requires Bearer token.
+        Message max length follows env `AI_MAX_MESSAGE_LENGTH` (default 4000).
       security:
         - BearerAuth: []
       requestBody:
@@ -287,7 +679,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/PostChatResponse"
         "400":
-          description: Validation error
+          description: Validation error or empty message / message too long
           content:
             application/json:
               schema:
@@ -301,6 +693,16 @@ paths:
               example:
                 message: Unauthorized
                 statusCode: 401
+        "403":
+          description: Conversation not found or access denied for this user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                message: Conversation not found or access denied
+                error: Forbidden
+                statusCode: 403
         "429":
           description: Too many requests
           content:
@@ -320,3 +722,430 @@ paths:
                 message: AI service temporarily unavailable
                 error: Service Unavailable
                 statusCode: 503
+
+  /knowledge/topics:
+    get:
+      tags:
+        - Knowledge
+      summary: List knowledge topics
+      description: |
+        Returns all topics with counts for the knowledge map.
+        Global default rate limit — 30 requests per minute per IP unless overridden.
+      responses:
+        "200":
+          description: Topics ordered by `order`
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/KnowledgeTopicListItem"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /knowledge/topics/{topicId}/preview:
+    get:
+      tags:
+        - Knowledge
+      summary: Topic preview
+      description: Questions and code tasks summary without full task bodies.
+      parameters:
+        - name: topicId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Preview payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TopicPreviewResponse"
+        "404":
+          description: Topic not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /knowledge/topics/{topicId}/questions:
+    get:
+      tags:
+        - Knowledge
+      summary: Topic questions for study / quiz
+      description: Includes options and `correctOptionIds` per question.
+      parameters:
+        - name: topicId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Questions with options
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TopicQuestionsResponse"
+        "404":
+          description: Topic not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /knowledge/topics/{topicId}/code-tasks:
+    get:
+      tags:
+        - Knowledge
+      summary: Topic code tasks
+      description: |
+        Reference solution is included only for DRAG_DROP tasks (for client-side checks).
+      parameters:
+        - name: topicId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Code tasks list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TopicCodeTasksResponse"
+        "404":
+          description: Topic not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /knowledge/topics/{topicId}/code-tasks/{codeTaskId}/ai-check:
+    post:
+      tags:
+        - Knowledge
+      summary: Submit code for AI_CHECK task
+      description: |
+        Server-side AI validation. Rate limit — 50 requests per hour per IP.
+        Task must be of type AI_CHECK.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: topicId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: codeTaskId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostCodeTaskSubmissionRequest"
+      responses:
+        "200":
+          description: Attempt recorded and AI verdict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubmitCodeTaskAiCheckResponse"
+        "400":
+          description: Validation error, wrong task type, or missing reference solution
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/ValidationError"
+                  - $ref: "#/components/schemas/Error"
+        "401":
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Code task not found in topic
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: AI service unavailable or unparsable AI reply
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /knowledge/topics/{topicId}/code-tasks/{codeTaskId}/drag-drop:
+    post:
+      tags:
+        - Knowledge
+      summary: Submit solution for DRAG_DROP task
+      description: |
+        Compares normalized user code to reference solution. Rate limit — 50 requests per hour per IP.
+        Task must be of type DRAG_DROP.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: topicId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: codeTaskId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostCodeTaskSubmissionRequest"
+      responses:
+        "200":
+          description: Attempt recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubmitCodeTaskDragDropResponse"
+        "400":
+          description: Validation error, wrong task type, or missing reference solution
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/ValidationError"
+                  - $ref: "#/components/schemas/Error"
+        "401":
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Code task not found in topic
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /knowledge/topics/{topicId}/questions/attempts:
+    post:
+      tags:
+        - Knowledge
+      summary: Submit topic question attempts
+      description: Persists attempts and returns correctness plus topic progress stats. Requires Bearer token.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: topicId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostTopicQuestionAttemptsRequest"
+      responses:
+        "201":
+          description: Attempts saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubmitTopicQuestionAttemptsResponse"
+        "400":
+          description: Validation error or questions not in topic
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/ValidationError"
+                  - $ref: "#/components/schemas/Error"
+        "401":
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Topic not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /internal/discord/chat:
+    post:
+      tags:
+        - Internal
+      summary: Discord bot — send chat message
+      description: |
+        For the Discord integration: creates or continues a channel-scoped conversation and returns an AI reply.
+        Requires `AI_LLM_PROVIDER=dify_chatflow` and Discord-related env (see server configuration).
+        Rate limit — 200 requests per hour per IP (controller throttle).
+      security:
+        - InternalToken: []
+        - InternalBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostDiscordChatRequest"
+      responses:
+        "200":
+          description: Assistant reply
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostChatResponse"
+        "400":
+          description: Validation error or empty message
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/ValidationError"
+                  - $ref: "#/components/schemas/Error"
+        "401":
+          description: Missing or invalid internal token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: AI or Discord persistence not configured / unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /mcp:
+    get:
+      tags:
+        - MCP
+      summary: MCP Streamable HTTP (sessionless)
+      description: &mcpDesc |
+        Model Context Protocol over HTTP (`@modelcontextprotocol/sdk` Streamable HTTP transport).
+        When `MCP_BEARER_TOKEN` is set, send `Authorization: Bearer <token>`.
+        Use POST for JSON-RPC messages; GET may be used per MCP transport. Not a classic REST CRUD API.
+      security:
+        - {}
+        - McpBearerAuth: []
+      responses:
+        "200":
+          description: Transport-dependent (e.g. SSE or JSON-RPC response)
+        "401":
+          description: Bearer required but missing or wrong
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+    post:
+      tags:
+        - MCP
+      summary: MCP Streamable HTTP (JSON-RPC)
+      description: *mcpDesc
+      security:
+        - {}
+        - McpBearerAuth: []
+      requestBody:
+        description: JSON-RPC envelope per MCP Streamable HTTP
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: JSON-RPC or streaming body per transport
+        "401":
+          description: Bearer required but missing or wrong
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "500":
+          description: Internal MCP error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jsonrpc:
+                    type: string
+                  error:
+                    type: object
+                  id:
+                    nullable: true
