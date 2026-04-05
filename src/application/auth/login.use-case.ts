@@ -23,6 +23,10 @@ export class LoginUseCase {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    if (!user.passwordHash) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
     const match = await bcrypt.compare(dto.password, user.passwordHash);
     if (!match) {
       throw new UnauthorizedException('Invalid credentials');
