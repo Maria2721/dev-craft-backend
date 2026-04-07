@@ -5,7 +5,9 @@ const simpleImportSort = require('eslint-plugin-simple-import-sort');
 const eslintPluginPrettierRecommended = require('eslint-plugin-prettier/recommended');
 
 module.exports = [
-  { ignores: ['dist', 'node_modules', 'eslint.config.js', 'jest.config.js'] },
+  {
+    ignores: ['dist', 'node_modules', 'eslint.config.js', 'jest.config.js', 'scripts/**/*.cjs'],
+  },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   eslintPluginPrettierRecommended,
