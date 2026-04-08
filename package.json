@@ -2,6 +2,7 @@
   "name": "dev-craft-backend",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "prisma": {
     "seed": "node scripts/seed-discord-system-user.cjs"
   },
