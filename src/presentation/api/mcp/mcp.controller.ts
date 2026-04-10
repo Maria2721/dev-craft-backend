@@ -4,7 +4,12 @@ import { SkipThrottle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 
 import { GetKnowledgeTopicsUseCase } from '../../../application/knowledge/get-knowledge-topics.use-case';
-import { GetTopicPreviewUseCase } from '../../../application/knowledge/get-topic-preview.use-case';
+import type { UserPracticeStatsResult } from '../../../application/knowledge/get-platform-stats.use-case';
+import { GetPlatformStatsUseCase } from '../../../application/knowledge/get-platform-stats.use-case';
+import { GetTopicCodeTasksUseCase } from '../../../application/knowledge/get-topic-code-tasks.use-case';
+import { SubmitCodeTaskAiCheckUseCase } from '../../../application/knowledge/submit-code-task-ai-check.use-case';
+import type { TopicCodeTasks } from '../../../domain/repositories/topic.repository';
+import { DiscordPracticeUserService } from '../../../infrastructure/discord/discord-practice-user.service';
 import { createDevCraftMcpServer } from '../../../infrastructure/mcp/create-devcraft-mcp-server';
 @Controller('mcp')
 @SkipThrottle()
@@ -13,7 +18,10 @@ export class McpController {
 
   constructor(
     private readonly getKnowledgeTopicsUseCase: GetKnowledgeTopicsUseCase,
-    private readonly getTopicPreviewUseCase: GetTopicPreviewUseCase,
+    private readonly getPlatformStatsUseCase: GetPlatformStatsUseCase,
+    private readonly getTopicCodeTasksUseCase: GetTopicCodeTasksUseCase,
+    private readonly submitCodeTaskAiCheckUseCase: SubmitCodeTaskAiCheckUseCase,
+    private readonly discordPracticeUserService: DiscordPracticeUserService,
   ) {}
 
   private formatTopicsList(
@@ -32,35 +40,42 @@ export class McpController {
     return lines.join('\n');
   }
 
-  private formatTopicSummary(input: {
-    preview: Awaited<ReturnType<GetTopicPreviewUseCase['execute']>>;
-    includeSamples: boolean;
-  }): string {
-    const { preview, includeSamples } = input;
+  private formatUserPracticeStatsText(s: UserPracticeStatsResult): string {
+    const pct = (num: number, den: number): string =>
+      den === 0 ? 'n/a' : `${((100 * num) / den).toFixed(1)}%`;
+
+    const scope =
+      s.resolvedTopic != null
+        ? `Тема: ${s.resolvedTopic.title} (slug: ${s.resolvedTopic.slug})`
+        : 'Все темы';
+
     const lines = [
-      `Topic: ${preview.topic.title}`,
-      `Slug: ${preview.topic.slug}`,
-      `Topic ID: ${preview.topic.id}`,
-      `Description: ${preview.topic.description ?? 'No description'}`,
-      `Questions count: ${preview.questions.length}`,
-      `Code tasks count: ${preview.codeTasks.length}`,
+      'Статистика практики DevCraft (только задания с AI-проверкой кода).',
+      `Область: ${scope}`,
+      '',
+      `За всё время — попыток: ${s.codeTaskAttemptsTotal}, успешных (valid): ${s.codeTaskAttemptsValid}, доля успеха: ${pct(s.codeTaskAttemptsValid, s.codeTaskAttemptsTotal)}`,
+      `Последние 7 дней — попыток: ${s.codeTaskAttemptsLast7Days}, успешных: ${s.codeTaskAttemptsValidLast7Days}, доля успеха: ${pct(s.codeTaskAttemptsValidLast7Days, s.codeTaskAttemptsLast7Days)}`,
     ];
 
-    if (includeSamples) {
-      if (preview.questions.length) {
-        lines.push('Sample question prompts:');
-        for (const question of preview.questions.slice(0, 3)) {
-          lines.push(`- ${question.prompt}`);
-        }
-      }
-      if (preview.codeTasks.length) {
-        lines.push('Sample code-task titles:');
-        for (const task of preview.codeTasks.slice(0, 3)) {
-          lines.push(`- ${task.title}`);
-        }
-      }
-    }
+    return lines.join('\n');
+  }
 
+  private formatTopicCodeTasksText(data: TopicCodeTasks): string {
+    const lines = [
+      `Topic: ${data.topic.title}`,
+      `Slug: ${data.topic.slug}`,
+      `Topic ID: ${data.topic.id}`,
+      `Code tasks (${data.codeTasks.length}):`,
+    ];
+    let i = 1;
+    for (const task of data.codeTasks) {
+      lines.push('');
+      lines.push(`${i}. [${task.taskType}] ${task.title}`);
+      lines.push(`   Task ID: ${task.id}`);
+      lines.push(`   Order: ${task.order}`);
+      lines.push(`   Description:\n${task.description}`);
+      i += 1;
+    }
     return lines.join('\n');
   }
 
@@ -76,7 +91,24 @@ export class McpController {
     }
 
     const mcpServer = createDevCraftMcpServer({
-      getTopicSummary: async ({ topicId, topicSlug, includeSamples }) => {
+      getPlatformStats: async ({ discordUserId, topicId, topicSlug }) => {
+        const userId = await this.discordPracticeUserService.resolveUserId(discordUserId);
+        const stats = await this.getPlatformStatsUseCase.execute({
+          userId,
+          topicId,
+          topicSlug,
+        });
+        let text = this.formatUserPracticeStatsText(stats);
+        const filter =
+          (topicId != null && topicId.trim() !== '') ||
+          (topicSlug != null && topicSlug.trim() !== '');
+        if (filter && stats.resolvedTopic == null) {
+          text +=
+            '\n\nNote: topicId/topicSlug did not match any topic; stats are for all topics for this user.';
+        }
+        return text;
+      },
+      getTopicCodeTasks: async ({ topicId, topicSlug }) => {
         const topics = await this.getKnowledgeTopicsUseCase.execute();
         const resolvedTopic =
           topicId != null
@@ -86,14 +118,33 @@ export class McpController {
               : null;
 
         if (!resolvedTopic) {
-          return this.formatTopicsList(topics);
+          const catalog = this.formatTopicsList(topics);
+          return `Specify topicId or topicSlug to list code tasks.\n\n${catalog}`;
         }
 
-        const preview = await this.getTopicPreviewUseCase.execute(resolvedTopic.id);
-        return this.formatTopicSummary({
-          preview,
-          includeSamples: includeSamples === true,
+        const data = await this.getTopicCodeTasksUseCase.execute(resolvedTopic.id);
+        return this.formatTopicCodeTasksText(data);
+      },
+      submitCodeTaskAiCheck: async ({ discordUserId, topicId, codeTaskId, code }) => {
+        const userId = await this.discordPracticeUserService.resolveUserId(discordUserId);
+        const out = await this.submitCodeTaskAiCheckUseCase.execute({
+          userId,
+          topicId,
+          codeTaskId,
+          code,
         });
+        return JSON.stringify(
+          {
+            valid: out.valid,
+            attemptId: out.attemptId,
+            codeTaskId: out.codeTaskId,
+            hints: out.hints,
+            justification: out.justification,
+            improvements: out.improvements,
+          },
+          null,
+          2,
+        );
       },
     });
     const transport = new StreamableHTTPServerTransport({
