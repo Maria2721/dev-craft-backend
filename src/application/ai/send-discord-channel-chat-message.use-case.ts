@@ -8,6 +8,7 @@ import { ConversationRepository } from '../../domain/repositories/conversation.r
 import { MessageRepository } from '../../domain/repositories/message.repository';
 import {
   DIFY_INPUT_DEVCRAFT_USER_ID_KEY,
+  DIFY_INPUT_DISCORD_USER_ID_KEY,
   DIFY_INPUT_MESSAGE_SOURCE_KEY,
   DIFY_MESSAGE_SOURCE_DISCORD,
 } from '../../infrastructure/llm/dify-chatflow.constants';
@@ -144,6 +145,7 @@ export class SendDiscordChannelChatMessageUseCase {
         difyInputOverrides: {
           [DIFY_INPUT_MESSAGE_SOURCE_KEY]: DIFY_MESSAGE_SOURCE_DISCORD,
           [DIFY_INPUT_DEVCRAFT_USER_ID_KEY]: 0,
+          [DIFY_INPUT_DISCORD_USER_ID_KEY]: discordUserId,
         },
       });
       if (out.difyConversationId && conversation.difyConversationId !== out.difyConversationId) {

@@ -22,6 +22,7 @@ export class DifyChatClient {
       inputs: {
         message_source: 'discord',
         devcraft_user_id: '0',
+        discord_user_id: options.discordUserId,
       },
     };
     if (options.conversationId) {

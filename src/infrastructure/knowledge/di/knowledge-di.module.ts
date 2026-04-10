@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { GetKnowledgeTopicsUseCase } from '../../../application/knowledge/get-knowledge-topics.use-case';
+import { GetPlatformStatsUseCase } from '../../../application/knowledge/get-platform-stats.use-case';
 import { GetTopicCodeTasksUseCase } from '../../../application/knowledge/get-topic-code-tasks.use-case';
 import { GetTopicPreviewUseCase } from '../../../application/knowledge/get-topic-preview.use-case';
 import { GetTopicQuestionsUseCase } from '../../../application/knowledge/get-topic-questions.use-case';
@@ -29,6 +30,7 @@ import { PrismaTopicRepository } from '../../persistence/topic/prisma-topic.repo
     { provide: CodeTaskRepository, useClass: PrismaCodeTaskRepository },
     { provide: CodeTaskAttemptRepository, useClass: PrismaCodeTaskAttemptRepository },
     GetKnowledgeTopicsUseCase,
+    GetPlatformStatsUseCase,
     GetTopicCodeTasksUseCase,
     GetTopicPreviewUseCase,
     GetTopicQuestionsUseCase,
@@ -38,6 +40,7 @@ import { PrismaTopicRepository } from '../../persistence/topic/prisma-topic.repo
   ],
   exports: [
     GetKnowledgeTopicsUseCase,
+    GetPlatformStatsUseCase,
     GetTopicCodeTasksUseCase,
     GetTopicPreviewUseCase,
     GetTopicQuestionsUseCase,
